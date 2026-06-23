@@ -3,8 +3,8 @@ Product Browse API — CodeVector Labs Take-Home Task
 Cursor-based pagination for 200,000 products, newest first, with category filter.
 
 Why cursor-based pagination?
-- OFFSET pagination: SELECT ... OFFSET 50000 scans 50,000 rows every time → slow
-- Cursor pagination: SELECT ... WHERE created_at < :cursor → uses index → O(log n)
+- OFFSET pagination: SELECT ... OFFSET 50000 scans 50,000 rows every time -> slow
+- Cursor pagination: SELECT ... WHERE created_at < :cursor -> uses index -> O(log n)
 - Stable: new inserts don't shift pages, so no duplicates or skipped rows
 """
 
@@ -30,7 +30,6 @@ pool = None
 async def lifespan(app: FastAPI):
     global pool
     pool = await get_pool()
-    # Create table + index if not exists
     async with pool.acquire() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS products (
@@ -52,7 +51,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Product Browse API",
-    description="Cursor-based pagination for 200K products — fast, stable, correct",
+    description="Cursor-based pagination for 200K products - fast, stable, correct",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -66,32 +65,32 @@ app.add_middleware(
 
 
 def encode_cursor(created_at: datetime, id: str) -> str:
-    """Encode (created_at, id) into an opaque base64 cursor string."""
     payload = json.dumps({"t": created_at.isoformat(), "id": id})
     return base64.urlsafe_b64encode(payload.encode()).decode()
 
 
 def decode_cursor(cursor: str) -> tuple[datetime, str]:
-    """Decode cursor back to (created_at, id)."""
     payload = json.loads(base64.urlsafe_b64decode(cursor).decode())
     return datetime.fromisoformat(payload["t"]), payload["id"]
 
 
-@app.get("/products", summary="Browse products — newest first")
+@app.get("/")
+async def root():
+    return {
+        "name": "Product Browse API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "endpoints": ["/products", "/categories", "/health"],
+        "total_products": 200000
+    }
+
+
+@app.get("/products", summary="Browse products - newest first")
 async def list_products(
     category: Optional[str] = Query(None, description="Filter by category"),
     cursor: Optional[str] = Query(None, description="Pagination cursor from previous response"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
 ):
-    """
-    Returns products newest-first with cursor-based pagination.
-
-    How it works:
-    - First page: no cursor, returns newest `limit` products
-    - Next page: pass `next_cursor` from previous response
-    - Stable: adding new products never causes duplicates or skipped rows
-    - Fast: uses (created_at, id) composite index — no full table scan
-    """
     async with pool.acquire() as conn:
         params = []
         conditions = []
@@ -112,7 +111,6 @@ async def list_products(
 
         where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-        # Fetch limit+1 to know if there's a next page
         params.append(limit + 1)
         query = f"""
             SELECT id, name, category, price, created_at, updated_at
