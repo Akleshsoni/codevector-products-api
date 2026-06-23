@@ -85,6 +85,11 @@ async def root():
     }
 
 
+
+@app.get("/")
+async def root():
+    return {"name": "Product Browse API", "version": "1.0.0", "docs": "/docs", "endpoints": ["/products", "/categories", "/health"], "total_products": 200000}
+
 @app.get("/products", summary="Browse products - newest first")
 async def list_products(
     category: Optional[str] = Query(None, description="Filter by category"),
