@@ -2,8 +2,8 @@
 
 Cursor-based pagination over 200,000 products — fast, stable, and correct even while data changes.
 
-**Live API:** `https://your-app.onrender.com`  
-**Docs:** `https://your-app.onrender.com/docs`
+**Live API:** `https://codevector-products-api-8t7a.onrender.com`  
+**Docs:** `https://codevector-products-api-8t7a.onrender.com/docs`
 
 ## The core problem
 
